@@ -354,7 +354,6 @@ minetest.register_on_dieplayer(function(player)
 		flash_huds[name] = nil
 	end
 end) ]]
--- Oil Grenade
 local OIL_RADIUS = 3   
 minetest.register_node("grenades:oil_overlay", {
     description = "Oil Overlay",
@@ -413,7 +412,7 @@ grenades.register_grenade("grenades:oil", {
             maxexptime = 2,
             minsize = 2,
             maxsize = 4,
-            texture = "grenades_oil_particle.png",
+            texture = "grenades_boom.png",
             collision_detection = true,
             collision_removal = true,
         })
