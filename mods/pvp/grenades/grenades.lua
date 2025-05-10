@@ -354,7 +354,142 @@ minetest.register_on_dieplayer(function(player)
 		flash_huds[name] = nil
 	end
 end) ]]
-
+-- Oil Grenade
+local OIL_RADIUS = 3   
+minetest.register_node("grenades:oil_overlay", {
+    description = "Oil Overlay",
+    drawtype = "nodebox",
+    tiles = {"blank.png"},
+    inventory_image = "grenades_oil_overlay.png",
+    wield_image = "grenades_oil_overlay.png",
+    use_texture_alpha = "blend",
+    paramtype = "light",
+    paramtype2 = "facedir",
+    walkable = true, 
+    pointable = false,
+    diggable = false,
+    buildable_to = true,
+    sunlight_propagates = true,
+    drop = "",
+    node_box = {
+        type = "fixed",
+        fixed = {
+            {-0.5, -0.495, -0.5, 0.5, -0.49, 0.5},
+        },
+    },
+    collision_box = {
+        type = "fixed",
+        fixed = {-0.5, -0.495, -0.5, 0.5, -0.49, 0.5},
+    },
+    groups = {
+        not_in_creative_inventory = 1,
+        slippery = 6,
+    },
+})
+grenades.register_grenade("grenades:oil", {
+    description = "Oil grenade",
+    image = "grenades_oil.png",
+    throw_cooldown = 3,
+    on_collide = function()
+        return true
+    end,
+    on_explode = function(def, obj, pos, name)
+        if not pos then return end
+        minetest.sound_play("grenades_glasslike_break", {
+            pos = pos,
+            gain = 1.0,
+            max_hear_distance = 32,
+        })
+        minetest.add_particlespawner({
+            amount = 50,
+            time = 0.5,
+            minpos = vector.subtract(pos, 1),
+            maxpos = vector.add(pos, 1),
+            minvel = {x = -2, y = 2, z = -2},
+            maxvel = {x = 2, y = 5, z = 2},
+            minacc = {x = 0, y = -9.8, z = 0},
+            maxacc = {x = 0, y = -9.8, z = 0},
+            minexptime = 1,
+            maxexptime = 2,
+            minsize = 2,
+            maxsize = 4,
+            texture = "grenades_oil_particle.png",
+            collision_detection = true,
+            collision_removal = true,
+        })
+        local min_pos = vector.subtract(pos, OIL_RADIUS)
+        local max_pos = vector.add(pos, OIL_RADIUS)
+        
+        for x = min_pos.x, max_pos.x do
+            for z = min_pos.z, max_pos.z do
+                local dx = x - pos.x
+                local dz = z - pos.z
+                if dx * dx + dz * dz <= OIL_RADIUS * OIL_RADIUS then
+                    local y = pos.y
+                    local check_pos = {x = x, y = y, z = z}
+                    local node = minetest.get_node(check_pos)
+                    local found_surface = false
+                    local surface_y = nil
+                    
+                 
+                    while y >= min_pos.y - 3 do
+                        check_pos.y = y
+                        node = minetest.get_node(check_pos)
+                        local node_def = minetest.registered_nodes[node.name]
+                        
+                       
+                        if node_def and node_def.walkable then
+                            if node.name == "grenades:oil_overlay" then
+                                local base_y = y
+                                while base_y >= min_pos.y - 3 do
+                                    local base_pos = {x = x, y = base_y, z = z}
+                                    local base_node = minetest.get_node(base_pos)
+                                    if base_node.name ~= "grenades:oil_overlay" then
+                                        if minetest.registered_nodes[base_node.name] and 
+                                           minetest.registered_nodes[base_node.name].walkable then
+                                            surface_y = base_y
+                                        end
+                                        break
+                                    end
+                                    base_y = base_y - 1
+                                end
+                                break
+                            else
+                                surface_y = y
+                                break
+                            end
+                        end
+                        y = y - 1
+                    end
+                    if surface_y then
+                        local oil_pos = {x = x, y = surface_y + 1, z = z}
+                        local above_node = minetest.get_node(oil_pos)
+                        if above_node.name == "air" then
+                            local below_pos = {x = x, y = oil_pos.y - 1, z = z}
+                            local below_node = minetest.get_node(below_pos)
+                            if below_node.name == "grenades:oil_overlay" then
+                                oil_pos.y = oil_pos.y + 1
+                                above_node = minetest.get_node(oil_pos)
+                                if above_node.name == "air" then
+                                    minetest.add_node(oil_pos, {name = "grenades:oil_overlay"})
+                                end
+                            else
+                                minetest.add_node(oil_pos, {name = "grenades:oil_overlay"})
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end,
+    particle = {
+        image = "grenades_smoke.png",
+        life = 1,
+        size = 3,
+        glow = 0,
+        interval = 0.1,
+    }
+})
 ctf_api.register_on_match_end(function()
 	for sound in pairs(sounds) do
 		minetest.sound_stop(sound)
