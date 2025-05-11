@@ -354,6 +354,7 @@ minetest.register_on_dieplayer(function(player)
 		flash_huds[name] = nil
 	end
 end) ]]
+-- Oil Grenade
 local OIL_RADIUS = 3   
 minetest.register_node("grenades:oil_overlay", {
     description = "Oil Overlay",
@@ -365,7 +366,7 @@ minetest.register_node("grenades:oil_overlay", {
     paramtype = "light",
     paramtype2 = "facedir",
     walkable = true, 
-    pointable = false,
+    pointable = true,
     diggable = false,
     buildable_to = true,
     sunlight_propagates = true,
@@ -381,8 +382,9 @@ minetest.register_node("grenades:oil_overlay", {
         fixed = {-0.5, -0.495, -0.5, 0.5, -0.49, 0.5},
     },
     groups = {
-        not_in_creative_inventory = 1,
         slippery = 6,
+	disable_jump  = 1,
+	falling_node = 1,
     },
 })
 grenades.register_grenade("grenades:oil", {
@@ -418,7 +420,7 @@ grenades.register_grenade("grenades:oil", {
         })
         local min_pos = vector.subtract(pos, OIL_RADIUS)
         local max_pos = vector.add(pos, OIL_RADIUS)
-        
+        remove_flora(pos, OIL_RADIUS)
         for x = min_pos.x, max_pos.x do
             for z = min_pos.z, max_pos.z do
                 local dx = x - pos.x
